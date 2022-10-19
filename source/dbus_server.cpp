@@ -27,29 +27,6 @@ std::string DBusServer::getUniqueName()
     return ::dbus_bus_get_unique_name(dbus_conn);
 }
 
-void DBusServer::addRuleForListening()
-{
-   // dbus_bus_add_match(dbus_conn, "type='signal',interface='test.signal.Type'", &dbus_error);
-  //  dbus_bus_add_match(dbus_conn, "type='signal',interface='com.sagiadinos.garlic.daemon'", &dbus_error);
-
-
-     /* dbus-glib call */
-
-   // dbus_connection_flush(dbus_conn);
-    if (dbus_error_is_set(&dbus_error))
-    {
-       fprintf(stderr, "Match Error (%s)\n", dbus_error.message);
-       exit(1);
-    }
-/*    dbus_bus_add_match(dbus_conn, "type='signal',interface='com.sagiadinos.garlic.daemon.close'", &dbus_error);
-    dbus_connection_flush(dbus_conn);
-    if (dbus_error_is_set(&dbus_error))
-    {
-       fprintf(stderr, "Match Error (%s)\n", dbus_error.message);
-       exit(1);
-    }*/
-}
-
 bool DBusServer::isReceiving()
 {
     dbus_connection_read_write(dbus_conn, 0);
@@ -60,103 +37,44 @@ bool DBusServer::isReceiving()
     return false;
 }
 
-void DBusServer::checkForSignal()
+bool DBusServer::isRebootSignal()
 {
-
-    // check if the message is a signal from the correct interface and with the correct name
-    if (dbus_message_is_signal(dbus_msg, "test.signal.Type", "reboot"))
+    bool ret = false;
+    if (dbus_message_is_signal(dbus_msg, "com.sagiadinos.garlic.daemon", "reboot"))
     {
-       // read the parameters
-       if (!dbus_message_iter_init(dbus_msg, &args))
-          fprintf(stderr, "Message has no arguments!\n");
-       else if (DBUS_TYPE_STRING != dbus_message_iter_get_arg_type(&args))
-          fprintf(stderr, "Argument is not string!\n");
-       else {
-          dbus_message_iter_get_basic(&args, &sigvalue);
-          printf("Got Signal with value %s\n", sigvalue);
-       }
+        ret = isPasswordMatching();
+        cleanQuery();
     }
 
-    // free the message
-    dbus_message_unref(dbus_msg);
+    return ret;
 }
 
-void DBusServer::checkForMethod()
+bool DBusServer::iśPlayerUpdateSignal()
 {
-    // check this is a method call for the right interface and method
-    if (dbus_message_is_method_call(dbus_msg, "com.sagiadinos.garlic.daemon.reboot", "reboot"))
-       replyToMethodCall();
+    bool ret = false;
+    if (dbus_message_is_signal(dbus_msg, "com.sagiadinos.garlic.daemon", "updatePlayer"))
+    {
+        ret = isPasswordMatching();
+        cleanQuery();
+    }
 
-    // free the message
-    dbus_message_unref(dbus_msg);
-}
-
-
-void DBusServer::queryDBus()
-{
-    // Compose remote procedure call
-    dbus_msg = ::dbus_message_new_method_call("org.freedesktop.DBus", "/", "org.freedesktop.DBus.Introspectable", "Introspect");
-
-    // Invoke remote procedure call, block for response
-    dbus_reply = ::dbus_connection_send_with_reply_and_block(dbus_conn, dbus_msg, DBUS_TIMEOUT_USE_DEFAULT, &dbus_error);
+    return ret;
 }
 
 void DBusServer::cleanQuery()
 {
     ::dbus_message_unref(dbus_msg);
-    ::dbus_message_unref(dbus_reply);
 }
 
-std::string DBusServer::parseMessage()
+bool DBusServer::isPasswordMatching()
 {
-    const char * dbus_result = nullptr;
-
-    // Parse response
-    ::dbus_message_get_args(dbus_reply, &dbus_error, DBUS_TYPE_STRING, &dbus_result, DBUS_TYPE_INVALID);
-
-    return dbus_result;
+    const char *sigvalue;
+    if (dbus_message_iter_init(dbus_msg, &args) && DBUS_TYPE_STRING != dbus_message_iter_get_arg_type(&args))
+    {
+       dbus_message_iter_get_basic(&args, &sigvalue);
+       fprintf(stderr, "Got reboot signal with value: %s\n", sigvalue);
+       return true;
+    }
+    return false;
 }
 
-void DBusServer::replyToMethodCall()
-{
-   DBusMessage* reply;
-   DBusMessageIter args;
-   DBusConnection* conn;
-   bool stat = true;
-   dbus_uint32_t level = 21614;
-   dbus_uint32_t serial = 0;
-   char* param = NULL;
-
-   // read the arguments
-   if (!dbus_message_iter_init(dbus_msg, &args))
-      fprintf(stderr, "Message has no arguments!\n");
-   else if (DBUS_TYPE_STRING != dbus_message_iter_get_arg_type(&args))
-      fprintf(stderr, "Argument is not string!\n");
-   else
-      dbus_message_iter_get_basic(&args, &param);
-   printf("Method called with %s\n", param);
-
-   // create a reply from the message
-   reply = dbus_message_new_method_return(dbus_msg);
-
-   // add the arguments to the reply
-   dbus_message_iter_init_append(reply, &args);
-   if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_BOOLEAN, &stat)) {
-      fprintf(stderr, "Out Of Memory!\n");
-      exit(1);
-   }
-   if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &level)) {
-      fprintf(stderr, "Out Of Memory!\n");
-      exit(1);
-   }
-
-   // send the reply && flush the connection
-   if (!dbus_connection_send(conn, reply, &serial)) {
-      fprintf(stderr, "Out Of Memory!\n");
-      exit(1);
-   }
-   dbus_connection_flush(conn);
-
-   // free the reply
-   dbus_message_unref(reply);
-}

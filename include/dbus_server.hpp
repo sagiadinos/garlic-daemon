@@ -10,22 +10,17 @@ class DBusServer
         DBusServer();
        ~DBusServer();
         std::string getUniqueName();
-        void addRuleForListening();
         bool isReceiving();
-        void checkForSignal();
-        void checkForMethod();
-        void queryDBus();
-        void cleanQuery();
-        std::string parseMessage();
+        bool isRebootSignal();
+        bool iśPlayerUpdateSignal();
     private:
         DBusConnection *dbus_conn = nullptr;
         DBusError dbus_error;
         DBusMessage * dbus_msg = nullptr;
-        DBusMessage * dbus_reply = nullptr;
         DBusMessageIter args;
-        bool sigvalue;
 
-        void replyToMethodCall();
+        bool isPasswordMatching();
+        void cleanQuery();
 };
 
 #endif // DBUSSERVER_HPP

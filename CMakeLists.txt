@@ -8,6 +8,7 @@ include_directories(/usr/include/dbus-1.0)
 include_directories(/usr/lib/dbus-1.0/include/)
 
 set(SOURCE_FILES
+        source/watchdog.cpp
         source/dbus_server.cpp
         source/daemon.cpp
 	source/main.cpp)
