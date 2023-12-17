@@ -10,7 +10,7 @@ void Watchdog::setActivity(bool is_active)
     is_active = is_active;
 }
 
-void Watchdog::run()
+void Watchdog::check()
 {
     if (!isPlayerRunning())
     {

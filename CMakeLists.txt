@@ -9,6 +9,8 @@ set(SOURCE_FILES
     source/watchdog.cpp
     source/daemon.hpp
     source/daemon.cpp
+    source/ipc_message_receiver.hpp
+    source/ipc_message_receiver.cpp
     source/log.hpp
     source/main.cpp)
 

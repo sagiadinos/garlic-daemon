@@ -13,7 +13,7 @@ Daemon &Daemon::instance()
     return instance;
 }
 
-void Daemon::run()
+void Daemon::startWatchdog(Watchdog *MyWatchdog)
 {
     while (is_running.load())
     {
@@ -23,15 +23,21 @@ void Daemon::run()
             LOG_INFO("Reload called.");
         }
 
-        MyWatchdog->run();
+        MyWatchdog->check();
         std::this_thread::sleep_for(std::chrono::seconds(3));
     }
 }
 
-void Daemon::setWatchdog(Watchdog *wd)
+void Daemon::startMessageListener(IPCMessageReceiver *MyIPCMessageReceiver)
 {
-    MyWatchdog = wd;
+    while (is_running.load())
+    {
+        std:string message;
+        MyIPCMessageReceiver->waitAndPop(message);
+        std::cout << "Received message from queue: " << message << std::endl;
+    }
 }
+
 
 void Daemon::signalHandler(int signal)
 {

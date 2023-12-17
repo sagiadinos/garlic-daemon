@@ -23,7 +23,7 @@ class Watchdog
         bool isPlayerRunning();
         bool isReboot();
         void setActivity(bool is_active);
-        void run();
+        void check();
         void startPlayer();
         void killZombieProcesses();
     private:

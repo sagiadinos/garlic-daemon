@@ -6,27 +6,25 @@
 
 #include "log.hpp"
 #include "watchdog.hpp"
+#include "ipc_message_receiver.hpp"
 
 class Daemon
 {
     public:
         static Daemon& instance();
 
-        void run();
-        void setWatchdog(Watchdog *wd);
-
+        void startWatchdog(Watchdog *MyWatchdog);
+        void startMessageListener(IPCMessageReceiver *MyIPCMessageReceiver);
     private:
         std::atomic<bool> is_running{true};
         std::atomic<bool> is_reload{false};
 
-       Daemon();
+        Daemon();
         Daemon(Daemon const&) = delete;
         void operator=(Daemon const&) = delete;
         void reload();
 
         static void signalHandler(int signal);
-
-        Watchdog *MyWatchdog;
 };
 
 #endif  // DAEMON_HPP
