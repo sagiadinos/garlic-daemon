@@ -1,5 +1,5 @@
-#ifndef LOG_HPP_
-#define LOG_HPP_
+#ifndef LOG_HPP
+#define LOG_HPP
 
 #include <chrono>
 #include <iomanip>

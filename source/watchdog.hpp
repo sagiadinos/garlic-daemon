@@ -1,5 +1,5 @@
-#ifndef WATCHDOG_H
-#define WATCHDOG_H
+#ifndef WATCHDOG_HPP
+#define WATCHDOG_HPP
 
 #include <sys/types.h>
 #include <dirent.h>
@@ -11,6 +11,8 @@
 #include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
+#include <thread>
+
 
 using namespace std;
 
@@ -20,9 +22,9 @@ class Watchdog
         Watchdog();
         bool isPlayerRunning();
         bool isReboot();
-        void setPathToPlayerExecutable(string path);
-        void setActivityStatus(bool newIs_active);
-        void runPlayer();
+        void setActivity(bool is_active);
+        void run();
+        void startPlayer();
         void killZombieProcesses();
     private:
         string player_name    = "garlic-player";
@@ -31,7 +33,6 @@ class Watchdog
         bool isInCmdLine(string dir_name);
         bool isZombie(int pid);
         bool is_active = true;
-        bool is_reboot = false;
 };
 
-#endif // WATCHDOG_H
+#endif // WATCHDOG_HPP

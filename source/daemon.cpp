@@ -1,29 +1,36 @@
-
 #include "daemon.hpp"
-#include "log.hpp"
 
 Daemon::Daemon()
 {
-    m_isRunning = true;
-    m_reload = false;
     signal(SIGINT, Daemon::signalHandler);
     signal(SIGTERM, Daemon::signalHandler);
     signal(SIGHUP, Daemon::signalHandler);
 }
 
-void Daemon::setReloadFunction(std::function<void()> func)
+Daemon &Daemon::instance()
 {
-    m_reloadFunc = func;
+    static Daemon instance;
+    return instance;
 }
 
-bool Daemon::IsRunning()
+void Daemon::run()
 {
-    if (m_reload)
+    while (is_running.load())
     {
-        m_reload = false;
-        m_reloadFunc();
+        if (is_reload.load())
+        {
+            instance().is_reload.store(false);
+            LOG_INFO("Reload called.");
+        }
+
+        MyWatchdog->run();
+        std::this_thread::sleep_for(std::chrono::seconds(3));
     }
-    return m_isRunning;
+}
+
+void Daemon::setWatchdog(Watchdog *wd)
+{
+    MyWatchdog = wd;
 }
 
 void Daemon::signalHandler(int signal)
@@ -33,10 +40,11 @@ void Daemon::signalHandler(int signal)
     {
         case SIGINT:
         case SIGTERM:
-            Daemon::instance().m_isRunning = false;
+        case SIGKILL:
+            instance().is_running.store(false);
             break;
         case SIGHUP:
-            Daemon::instance().m_reload = true;
+            instance().is_reload.store(true);
             break;
-    }
+        }
 }

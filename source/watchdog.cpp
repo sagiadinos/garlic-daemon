@@ -1,37 +1,34 @@
-#include "watchdog.h"
+#include "watchdog.hpp"
 
 Watchdog::Watchdog()
 {
 
 }
 
-void Watchdog::setActivityStatus(bool active)
+void Watchdog::setActivity(bool is_active)
 {
-    is_active = active;
+    is_active = is_active;
 }
 
-void Watchdog::setPathToPlayerExecutable(string path)
+void Watchdog::run()
 {
-    path_to_player_executable = path;
+    if (!isPlayerRunning())
+    {
+        fprintf(stderr, "garlic-player needs to be started\n");
+    }
 }
 
-void Watchdog::runPlayer()
+void Watchdog::startPlayer()
 {
     std::system(path_to_player_executable.c_str());
 }
 
 bool Watchdog::isPlayerRunning()
 {
-    // if watchdog is not active return always true
-   if (!is_active)
+    if (!is_active) // if watchdog is not active return always true
        return true;
 
    return (getPlayerProcId() > -1);
-}
-
-bool Watchdog::isReboot()
-{
-    return is_reboot;
 }
 
 int Watchdog::getPlayerProcId()
