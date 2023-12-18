@@ -1,6 +1,6 @@
 /*************************************************************************************
     garlic-daemon: Linux daemon for garlic-player
-    Copyright (C) 2023 Nikolaos Saghiadinos <ns@smil-control.com>
+    Copyright (C) 2023 Nikolaos Sagiadinos <ns@smil-control.com>
     This file is part of the garlic-daemon source code
 
     This program is free software: you can redistribute it and/or modify
@@ -24,19 +24,20 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include <libconfig.h++>
 #include "log.hpp"
 
 class CmdParser
 {
     public:
         CmdParser(int argc, char** argv);
-        void checkForConfigOption();
+        bool checkForConfigOption();
+        std::string getConfileFilePath();
     private:
+        std::string configFileName;
+        std::vector<std::string> m_tokens;
         const std::string& getCmdOptionValue(const std::string& option) const;
         bool cmdOptionExist(const std::string& option) const;
 
-        std::vector<std::string> m_tokens;
 };
 
 #endif  // COMMAND_LINE_PARSER_HPP

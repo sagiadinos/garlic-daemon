@@ -1,6 +1,6 @@
 /*************************************************************************************
     garlic-daemon: Linux daemon for garlic-player
-    Copyright (C) 2023 Nikolaos Saghiadinos <ns@smil-control.com>
+    Copyright (C) 2023 Nikolaos Sagiadinos <ns@smil-control.com>
     This file is part of the garlic-daemon source code
 
     This program is free software: you can redistribute it and/or modify
@@ -26,9 +26,10 @@
  *
  * @param queueName
  */
-IPCMessageReceiver::IPCMessageReceiver(const std::string &queueName)
+IPCMessageReceiver::IPCMessageReceiver(const std::string &name)
 {
-    mq = mq_open(queueName.c_str(), O_RDONLY | O_CREAT, 0644, nullptr);
+    message_queue_name = name;
+    mq = mq_open(message_queue_name.c_str(), O_RDWR | O_CREAT, 0644, nullptr);
     if (mq == (mqd_t)-1)
     {
         throw std::runtime_error("Unable to open message queue");
@@ -38,21 +39,22 @@ IPCMessageReceiver::IPCMessageReceiver(const std::string &queueName)
 /**
  * @brief IPCMessageReceiver::~IPCMessageReceiver
  *
- * Stops the detached thread and close the message queu.
+ * We should delete the message queue otherwise the last
+ * message could be left.
+ *
  */
 IPCMessageReceiver::~IPCMessageReceiver()
 {
-    stop();
-    mq_close(mq);
+    mq_unlink(message_queue_name.c_str());
 }
 
 /**
- * @brief IPCMessageReceiver::receiveMessages
+ * @brief IPCMessageReceiver::loopIPCReceiver
  *
  * Main waiting loop for receiving messages. Message will be pushed into
  * a std::queue<std::string> queue.
  */
-void IPCMessageReceiver::receiveMessages()
+void IPCMessageReceiver::loopIPCReceiver()
 {
     while (running.load())
     {
@@ -64,35 +66,41 @@ void IPCMessageReceiver::receiveMessages()
         {
             std::string message(buffer, bytes_read);
             this->push(message);
+            if (message == TERMINATION_MESSAGE)
+                break;
         }
         else if (errno != EAGAIN)
         {
             std::cerr << "Failed to receive message: " << strerror(errno) << std::endl;
         }
     }
+    std::cout << "Finish message reciever thread." << std::endl;
 }
 
 /**
- * @brief IPCMessageReceiver::start
+ * @brief IPCMessageReceiver::startIPCReceiver
  *
- * Starts the receiveMessages thread an detached it to unblock.
+ * Starts the loopIPCReceiver thread an detached it to unblock.
  *
  */
-void IPCMessageReceiver::start()
+void IPCMessageReceiver::startIPCReceiver()
 {
     running.store(true);
-    receiverThread = std::thread(&IPCMessageReceiver::receiveMessages, this);
+    receiverThread = std::thread(&IPCMessageReceiver::loopIPCReceiver, this);
     receiverThread.detach();
 }
 
 /**
- * @brief IPCMessageReceiver::stop
+ * @brief IPCMessageReceiver::stopIPCReceiver
  *
  * Stops the receiveMessages thread
  */
-void IPCMessageReceiver::stop()
+void IPCMessageReceiver::stopIPCReceiver()
 {
     running.store(false);
+    mq_send(mq, TERMINATION_MESSAGE.c_str(), TERMINATION_MESSAGE.size(), 0);
+    cv.notify_one();
+    mq_close(mq);
 }
 
 /**
@@ -124,7 +132,7 @@ bool IPCMessageReceiver::pollingQueue(std::string& message)
 void IPCMessageReceiver::waitForMessage(std::string& message)
 {
     std::unique_lock<std::mutex> lock(mtx);
-    cv.wait(lock, [this]{ return !queue.empty(); });
+    cv.wait(lock, [this]{ return !queue.empty()  || !running.load(); });
     message = queue.front();
     queue.pop();
 }

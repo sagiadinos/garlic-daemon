@@ -1,6 +1,6 @@
 /*************************************************************************************
     garlic-daemon: Linux daemon for garlic-player
-    Copyright (C) 2023 Nikolaos Saghiadinos <ns@smil-control.com>
+    Copyright (C) 2023 Nikolaos Sagiadinos <ns@smil-control.com>
     This file is part of the garlic-daemon source code
 
     This program is free software: you can redistribute it and/or modify
@@ -20,6 +20,7 @@
 #define IPCMESSAGERECEIVER_HPP
 
 #include <mqueue.h>
+#include <signal.h>
 #include <atomic>
 #include <thread>
 #include <iostream>
@@ -50,17 +51,21 @@
  */
 class IPCMessageReceiver
 {
+
     public:
-        IPCMessageReceiver(const std::string& queueName);
+        IPCMessageReceiver(const std::string& name);
         ~IPCMessageReceiver();
-        void receiveMessages();
-        void start();
-        void stop();
+        void loopIPCReceiver();
+        void startIPCReceiver();
+        void stopIPCReceiver();
         bool pollingQueue(std::string& message);
         void waitForMessage(std::string& message);
 
     private:
+        const std::string TERMINATION_MESSAGE = "TERMINATE\0";
+        std::string message_queue_name = "";
         mqd_t mq;
+        std::thread::id receiver_thread_id;
         std::atomic<bool> running;
         std::thread receiverThread;
         std::queue<std::string> queue;

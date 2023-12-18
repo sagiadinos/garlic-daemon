@@ -1,6 +1,6 @@
 /*************************************************************************************
     garlic-daemon: Linux daemon for garlic-player
-    Copyright (C) 2023 Nikolaos Saghiadinos <ns@smil-control.com>
+    Copyright (C) 2023 Nikolaos Sagiadinos <ns@smil-control.com>
     This file is part of the garlic-daemon source code
 
     This program is free software: you can redistribute it and/or modify
@@ -19,10 +19,26 @@
 #ifndef MESSAGEDISPATCHER_H
 #define MESSAGEDISPATCHER_H
 
+#include <string>
+#include <iostream>
+#include <unistd.h>
+#include <sys/reboot.h>
+
 class MessageDispatcher
 {
+
     public:
         MessageDispatcher();
+        void dispatch(std::string message);
+
+    private:
+        const std::string REBOOT      = "reboot";
+        const std::string INSTALL_APP = "install_app";
+        const std::string REMOVE_APP  = "remove_app";
+
+        void reboot();
+        void installApp();
+        void removeApp();
 };
 
 #endif // MESSAGEDISPATCHER_H

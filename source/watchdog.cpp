@@ -32,7 +32,7 @@ void Watchdog::check()
 {
     if (!isPlayerRunning())
     {
-        fprintf(stderr, "garlic-player needs to be started\n");
+        std::cerr << "garlic-player needs to be started" << std::endl;
     }
 }
 

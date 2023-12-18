@@ -1,6 +1,6 @@
 /*************************************************************************************
     garlic-daemon: Linux daemon for garlic-player
-    Copyright (C) 2023 Nikolaos Saghiadinos <ns@smil-control.com>
+    Copyright (C) 2023 Nikolaos Sagiadinos <ns@smil-control.com>
     This file is part of the garlic-daemon source code
 
     This program is free software: you can redistribute it and/or modify
@@ -16,40 +16,64 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *************************************************************************************/
 
+#include <filesystem>
 #include "cmd_parser.hpp"
-
 #include "daemon.hpp"
 #include "log.hpp"
 #include "watchdog.hpp"
+#include "configuration.hpp"
+#include "message_dispatcher.hpp"
 
 int main(int argc, char** argv)
 {
+    CmdParser MyCmdParser(argc, argv);
+    Configuration MyConfiguration;
+    if (MyCmdParser.checkForConfigOption())
+    {
+        libconfig::Config config;
+        config.readFile(MyCmdParser.getConfileFilePath().c_str());
+        MyConfiguration.readLibConfigValues(&config);
+    }
+    std::string lockfile_name = "/tmp/" + MyConfiguration.getAppName() + ".lock";
+
+    #ifdef NDEBUG
+    if(std::filesystem::exists(lockfile_name))
+    {
+        std:cerr << ("Application is already running!")  << std::endl;
+        return 1;
+    }
+    else
+    {
+        ofstream file;
+        file.open (lockfile_name);
+    }
+    #endif
     try
     {
-        // Command line and config file example
-        CmdParser cmd(argc, argv);
-        cmd.checkForConfigOption();
 
         Watchdog MyWatchdog;
-        std::string queueName = "/garlic-daemon";
-        IPCMessageReceiver MyIPCMessageReceiver(queueName);
-        MyIPCMessageReceiver.start();
+        IPCMessageReceiver MyIPCMessageReceiver("/garlic-daemon");
+        MyIPCMessageReceiver.startIPCReceiver();
+        MessageDispatcher MyMessageDispatcher;
 
         Daemon& MyDaemon = Daemon::instance(); // The Daemon class is a singleton to avoid be instantiate more than once
-
+        MyDaemon.setIPC(&MyIPCMessageReceiver);
+        MyDaemon.setMessageDispatcher(&MyMessageDispatcher);
         std::thread WatchdogThread(&Daemon::startWatchdog,  &Daemon::instance(), &MyWatchdog);
-        std::thread MessageQueueThread(&Daemon::startMessageListener,  &Daemon::instance(), &MyIPCMessageReceiver);
+        std::thread MessageQueueThread(&Daemon::startMessageListener,  &Daemon::instance());
         WatchdogThread.join();
         MessageQueueThread.join();
+        MyIPCMessageReceiver.stopIPCReceiver();
 
         LOG_INFO("The daemon process ended gracefully.");
     }
     catch (const std::exception& e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
+        std::remove(lockfile_name.c_str());
         return 1;
     }
 
-
+    std::remove(lockfile_name.c_str()); // important to do as last entry
     return 0;
 }

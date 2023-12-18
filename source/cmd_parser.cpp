@@ -1,6 +1,6 @@
 /*************************************************************************************
     garlic-daemon: Linux daemon for garlic-player
-    Copyright (C) 2023 Nikolaos Saghiadinos <ns@smil-control.com>
+    Copyright (C) 2023 Nikolaos Sagiadinos <ns@smil-control.com>
     This file is part of the garlic-daemon source code
 
     This program is free software: you can redistribute it and/or modify
@@ -26,18 +26,20 @@ CmdParser::CmdParser(int argc, char **argv)
     }
 }
 
-void CmdParser::checkForConfigOption()
+bool CmdParser::checkForConfigOption()
 {
     if (!cmdOptionExist("--config"))
-        return;
+        return false;
 
-    const std::string configFileName = getCmdOptionValue("--config");
+    configFileName = getCmdOptionValue("--config");
     LOG_INFO("Config file name = ", configFileName);
-    libconfig::Config config;
-    config.readFile(configFileName.c_str());
-    std::string test{};
-    config.lookupValue("test", test);
-    LOG_INFO("Config option test = ", test);
+
+    return true;
+}
+
+std::string CmdParser::getConfileFilePath()
+{
+    return configFileName;
 }
 
 const std::string &CmdParser::getCmdOptionValue(const std::string &option) const

@@ -1,6 +1,6 @@
 /*************************************************************************************
     garlic-daemon: Linux daemon for garlic-player
-    Copyright (C) 2023 Nikolaos Saghiadinos <ns@smil-control.com>
+    Copyright (C) 2023 Nikolaos Sagiadinos <ns@smil-control.com>
     This file is part of the garlic-daemon source code
 
     This program is free software: you can redistribute it and/or modify
@@ -25,6 +25,7 @@
 #include "log.hpp"
 #include "watchdog.hpp"
 #include "ipc_message_receiver.hpp"
+#include "message_dispatcher.hpp"
 
 class Daemon
 {
@@ -32,10 +33,19 @@ class Daemon
         static Daemon& instance();
 
         void startWatchdog(Watchdog *MyWatchdog);
-        void startMessageListener(IPCMessageReceiver *MyIPCMessageReceiver);
+        void setIPC(IPCMessageReceiver *ipc);
+        void setMessageDispatcher(MessageDispatcher *dispatcher);
+        void startMessageListener();
+
     private:
+
+        const int WATCHDOG_TIMER = 5;
+
         std::atomic<bool> is_running{true};
         std::atomic<bool> is_reload{false};
+        IPCMessageReceiver *MyIPCMessageReceiver;
+        MessageDispatcher *MyMessageDispatcher;
+        std::condition_variable cv;
 
         Daemon();
         Daemon(Daemon const&) = delete;

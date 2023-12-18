@@ -1,6 +1,6 @@
 /*************************************************************************************
     garlic-daemon: Linux daemon for garlic-player
-    Copyright (C) 2023 Nikolaos Saghiadinos <ns@smil-control.com>
+    Copyright (C) 2023 Nikolaos Sagiadinos <ns@smil-control.com>
     This file is part of the garlic-daemon source code
 
     This program is free software: you can redistribute it and/or modify
@@ -19,3 +19,40 @@
 #include "message_dispatcher.hpp"
 
 MessageDispatcher::MessageDispatcher() {}
+
+void MessageDispatcher::dispatch(std::string message)
+{
+    if (message == REBOOT)
+    {
+        reboot();
+    }
+    else if (message == INSTALL_APP)
+    {
+        installApp();
+    }
+    else if (message == REMOVE_APP)
+    {
+        removeApp();
+    }
+    else
+    {
+        std::cerr << "Signale "+message+" is not supported." << std::endl;
+    }
+
+}
+
+void MessageDispatcher::reboot()
+{
+    sync();
+    ::reboot(RB_AUTOBOOT);
+}
+
+void MessageDispatcher::installApp()
+{
+    std::cerr << "install apps not yet implemented." << std::endl;
+}
+
+void MessageDispatcher::removeApp()
+{
+    std::cerr << "install apps not yet implemented." << std::endl;
+}

@@ -1,10 +1,10 @@
 [Unit]
-Description=garlic-damon for digital signage
+Description=garlic-damon for digital signage player
 After=network.taget
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/garlic-daemon --config /etc/garlic-daemon/garlic-daemon.conf
+ExecStart=/usr/local/bin/garlic-daemon --config /etc/garlic-daemon/garlic-daemon.conf
 ExecReload=/bin/kill -HUP $MAINPID
 User=root
 StandardOutput=syslog

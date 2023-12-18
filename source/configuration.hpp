@@ -1,6 +1,6 @@
 /*************************************************************************************
     garlic-daemon: Linux daemon for garlic-player
-    Copyright (C) 2023 Nikolaos Sagsiadinos <ns@smil-control.com>
+    Copyright (C) 2023 Nikolaos Sagiadinos <ns@smil-control.com>
     This file is part of the garlic-daemon source code
 
     This program is free software: you can redistribute it and/or modify
@@ -16,41 +16,33 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *************************************************************************************/
 
-#ifndef WATCHDOG_HPP
-#define WATCHDOG_HPP
+#ifndef CONFIGURATION_HPP
+#define CONFIGURATION_HPP
 
-#include <sys/types.h>
-#include <dirent.h>
-#include <errno.h>
-#include <vector>
-#include <string>
-#include <cstdlib>
 #include <iostream>
-#include <fstream>
-#include <stdlib.h>
-#include <stdio.h>
-#include <thread>
+#include <libconfig.h++>
 
-
-using namespace std;
-
-class Watchdog
+class Configuration
 {
     public:
-        Watchdog();
-        bool isPlayerRunning();
-        bool isReboot();
-        void setActivity(bool is_active);
-        void check();
-        void startPlayer();
-        void killZombieProcesses();
+        Configuration();
+        void readLibConfigValues(libconfig::Config  *config);
+
+        std::string getAppName() const;
+        std::string getPlayerName() const;
+        std::string getPlayerPath() const;
+        std::string getPlayerUser() const;
+
     private:
-        string player_name    = "garlic-player";
-        string path_to_player_executable = "/opt/garlic-player/garlic.sh";
-        int getPlayerProcId();
-        bool isInCmdLine(string dir_name);
-        bool isZombie(int pid);
-        bool is_active = true;
+        const std::string APP_NAME    = "garlic-daemon";
+        const std::string PLAYER_NAME = "garlic-player";
+        const std::string PLAYER_PATH = "/usr/local/bin/";
+        const std::string PLAYER_USER = "digitalsignage";
+
+        std::string app_name    = APP_NAME;
+        std::string player_name = PLAYER_NAME;
+        std::string player_path = PLAYER_PATH;
+        std::string player_user = PLAYER_USER;
 };
 
-#endif // WATCHDOG_HPP
+#endif // CONFIGURATION_HPP

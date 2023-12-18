@@ -1,6 +1,6 @@
 /*************************************************************************************
     garlic-daemon: Linux daemon for garlic-player
-    Copyright (C) 2023 Nikolaos Saghiadinos <ns@smil-control.com>
+    Copyright (C) 2023 Nikolaos Sagiadinos <ns@smil-control.com>
     This file is part of the garlic-daemon source code
 
     This program is free software: you can redistribute it and/or modify
@@ -33,6 +33,7 @@ Daemon &Daemon::instance()
 
 void Daemon::startWatchdog(Watchdog *MyWatchdog)
 {
+
     while (is_running.load())
     {
         if (is_reload.load())
@@ -42,20 +43,37 @@ void Daemon::startWatchdog(Watchdog *MyWatchdog)
         }
 
         MyWatchdog->check();
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+
+        // This is more elegant than std::this_thread::sleep_for(std::chrono::seconds(3));
+        // as now we ar eavbleto interupt the waiting process
+        std::mutex mtx;
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait_for(lock, std::chrono::seconds(WATCHDOG_TIMER), []{ return false; });
     }
+    std::cout << "Finish watchdog thread." << std::endl;
 }
 
-void Daemon::startMessageListener(IPCMessageReceiver *MyIPCMessageReceiver)
+void Daemon::setIPC(IPCMessageReceiver *ipc)
+{
+    MyIPCMessageReceiver = ipc;
+}
+
+void Daemon::setMessageDispatcher(MessageDispatcher *dispatcher)
+{
+    MyMessageDispatcher = dispatcher;
+}
+
+void Daemon::startMessageListener()
 {
     while (is_running.load())
     {
         std:string message;
         MyIPCMessageReceiver->waitForMessage(message);
         std::cout << "Received message from queue: " << message << std::endl;
+        MyMessageDispatcher->dispatch(message);
     }
+    std::cout << "Finish message queue listener thread." << std::endl;
 }
-
 
 void Daemon::signalHandler(int signal)
 {
@@ -66,9 +84,11 @@ void Daemon::signalHandler(int signal)
         case SIGTERM:
         case SIGKILL:
             instance().is_running.store(false);
+            instance().cv.notify_all();
+            instance().MyIPCMessageReceiver->stopIPCReceiver();
             break;
         case SIGHUP:
             instance().is_reload.store(true);
             break;
-        }
+    }
 }
